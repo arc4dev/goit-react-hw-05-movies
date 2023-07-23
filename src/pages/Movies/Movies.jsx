@@ -1,50 +1,47 @@
-import axios from 'axios';
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { API_KEY, API_URL } from 'utils';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import { Loader } from 'components/Loader/Loader';
+import { MoviesList } from 'components/MoviesList/MoviesList';
+import { fetchData } from 'services/fetchAPI';
+import { API_URL } from 'utils';
 
 export default function Movies() {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [movies, setMovies] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const query = searchParams.get('query') || '';
+
+  useEffect(() => {
+    fetchData(
+      `${API_URL}/search/movie?query=${query}`,
+      setMovies,
+      setIsLoading,
+      'results'
+    );
+  }, [query]);
 
   const handleSubmit = async e => {
     e.preventDefault();
 
-    if (!query.length) return;
-
-    const res = await axios.get(`${API_URL}/search/movie?query=${query}`, {
-      params: {
-        api_key: API_KEY,
-      },
-    });
-    const { data } = res;
-    console.log(data);
-
-    setResults(data.results);
+    setSearchParams({ query: e.target.elements.query.value });
   };
 
   return (
-    <div>
+    <div className="container">
       <form onSubmit={handleSubmit}>
-        <input
-          onChange={e => setQuery(e.target.value)}
-          value={query}
-          type="text"
-        />
+        <input type="text" name="query" />
         <button type="submit">Search</button>
       </form>
 
-      <ul>
-        {!results.length ? (
-          <p>Movie with that name not found!</p>
-        ) : (
-          results.map(movie => (
-            <li key={movie.id}>
-              <Link to={`/movies/${movie.id}`}>{movie.title}</Link>
-            </li>
-          ))
-        )}
-      </ul>
+      {isLoading ? (
+        <div>
+          <Loader />
+        </div>
+      ) : (
+        <MoviesList movies={movies} />
+      )}
     </div>
   );
 }

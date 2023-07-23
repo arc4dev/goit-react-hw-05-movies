@@ -1,43 +1,45 @@
-import axios from 'axios';
-
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { API_KEY, API_URL, IMG_URL } from 'utils';
 
-export function Cast() {
+import { fetchData } from 'services/fetchAPI';
+import { Loader } from 'components/Loader/Loader';
+import { API_URL, IMG_PLACEHOLDER, IMG_URL } from 'utils';
+
+export default function Cast() {
   const { id } = useParams();
 
   const [cast, setCast] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const getMovieReviews = async () => {
-      const res = await axios.get(`${API_URL}/movie/${id}/credits`, {
-        params: {
-          api_key: API_KEY,
-        },
-      });
-
-      const { data } = res;
-
-      setCast(data.cast);
-    };
-    getMovieReviews();
+    fetchData(`${API_URL}/movie/${id}/credits`, setCast, setIsLoading, 'cast');
   }, [id]);
+
+  const handleImageError = e => {
+    e.target.src = IMG_PLACEHOLDER;
+  };
 
   return (
     <div>
       <ul>
-        {cast.map(person => (
-          <li key={person.name}>
-            <img
-              width={100}
-              src={`${IMG_URL}${person.profile_path}`}
-              alt={person.name}
-            />
-            <p>{person.name}</p>
-            <p>Character: {person.character}</p>
-          </li>
-        ))}
+        {isLoading ? (
+          <div>
+            <Loader />
+          </div>
+        ) : (
+          cast.map(person => (
+            <li key={person.id}>
+              <img
+                width={100}
+                src={`${IMG_URL}${person.profile_path}`}
+                alt={person.name}
+                onError={handleImageError}
+              />
+              <p>{person.name}</p>
+              <p>Character: {person.character}</p>
+            </li>
+          ))
+        )}
       </ul>
     </div>
   );
